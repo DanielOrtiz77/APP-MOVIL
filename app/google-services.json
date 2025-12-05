@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "496351542112",
+    "project_id": "app-movil-f4a3a",
+    "storage_bucket": "app-movil-f4a3a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:496351542112:android:c4bc7c2405f6795b44fc05",
+        "android_client_info": {
+          "package_name": "com.example.app_movil"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6j2FWn8gvac5K7tlWeGGMJNJWj90gicI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
