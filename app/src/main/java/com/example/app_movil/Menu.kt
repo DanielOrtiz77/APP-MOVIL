@@ -1,65 +1,62 @@
 package com.example.app_movil
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
+
+// --- ViewModel para compartir datos del usuario ---
+class UserViewModel : ViewModel() {
+    val usuario = MutableLiveData<Usuario>()
+}
 
 class Menu : AppCompatActivity() {
 
     private lateinit var bottomNav: BottomNavigationView
-    private var usu: Usuario? = null
+    // Inicializar el ViewModel
+    private val userViewModel: UserViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_menu)
 
-        // Simulación: Obtener datos del usuario después del login.
-        // En tu caso real, lo recibirías del Intent de la Activity Principal.
-        // Aquí lo creo para el ejemplo, pero tú debes usar la línea comentada.
-        // usu = intent.getParcelableExtra("usuario")
-        val firebaseUser = FirebaseAuth.getInstance().currentUser
-        usu = Usuario(
-            nombre = firebaseUser?.displayName ?: firebaseUser?.email ?: "Anónimo",
-            email = firebaseUser?.email ?: "N/A",
-            tipo = "Normal", // Deberías obtener esto de tu base de datos
-            contraseña = 0 // No almacenar contraseñas en texto plano
-        )
+        // --- OBTENER EL USUARIO DEL INTENT Y GUARDARLO EN EL VIEWMODEL ---
+        val usu: Usuario? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("usuario", Usuario::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra("usuario")
+        }
 
+        if (usu != null) {
+            userViewModel.usuario.value = usu
+        } else {
+            cerrarSesion()
+            return // Salir para evitar errores
+        }
+        // --- FIN DE LA LÓGICA DEL USUARIO ---
 
         bottomNav = findViewById(R.id.bottom_navigation)
 
         bottomNav.setOnItemSelectedListener { item ->
-            var selectedFragment: Fragment? = null
-
-            when (item.itemId) {
-                R.id.nav_manipular -> {
-                    selectedFragment = ManipularArduinoFragment()
-                }
-                R.id.nav_acciones -> {
-                    selectedFragment = AccionesFragment()
-                }
-                R.id.nav_perfil -> {
-                    selectedFragment = PerfilFragment()
-                }
+            val selectedFragment: Fragment? = when (item.itemId) {
+                R.id.nav_manipular -> ManipularArduinoFragment()
+                R.id.nav_acciones -> AccionesFragment()
+                R.id.nav_perfil -> PerfilFragment()
                 R.id.nav_cerrar_sesion -> {
-                    FirebaseAuth.getInstance().signOut()
-                    val intent = Intent(this, Principal::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    return@setOnItemSelectedListener true // Finaliza el listener aquí
+                    cerrarSesion()
+                    return@setOnItemSelectedListener true
                 }
+                else -> null
             }
 
             if (selectedFragment != null) {
-                // Pasar el objeto Usuario al fragment
-                val bundle = Bundle()
-                bundle.putParcelable("usuario", usu)
-                selectedFragment.arguments = bundle
-
-                // Reemplazar el contenido del FrameLayout con el nuevo fragment
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.fragment_container, selectedFragment)
                     .commit()
@@ -67,9 +64,18 @@ class Menu : AppCompatActivity() {
             true
         }
 
-        // Cargar el fragmento inicial por defecto al abrir la actividad
+        // Cargar el fragmento inicial por defecto
         if (savedInstanceState == null) {
-            bottomNav.selectedItemId = R.id.nav_manipular // Esto activará el listener y cargará el fragmento
+            bottomNav.selectedItemId = R.id.nav_manipular
         }
+    }
+
+    private fun cerrarSesion() {
+        FirebaseAuth.getInstance().signOut()
+        val intent = Intent(this, Principal::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
     }
 }

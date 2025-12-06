@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Color cuando el ítem está seleccionado (mantenemos el azul brillante) -->
+    <item android:color="#2196F3" android:state_checked="true" />
+    <!-- Color por defecto (blanco, para que contraste con el fondo oscuro) -->
+    <item android:color="#FFFFFF" />
+</selector>
+

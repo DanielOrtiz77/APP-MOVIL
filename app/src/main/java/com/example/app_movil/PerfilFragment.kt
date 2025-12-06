@@ -7,17 +7,12 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 
 class PerfilFragment : Fragment() {
 
-    private var usu: Usuario? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            usu = it.getParcelable("usuario")
-        }
-    }
+    // Obtener el ViewModel compartido de la actividad Menu
+    private val userViewModel: UserViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,16 +28,19 @@ class PerfilFragment : Fragment() {
         val tvnomper: TextView = view.findViewById(R.id.tvnomper)
         val tvemaper: TextView = view.findViewById(R.id.tvemaper)
         val tvtipper: TextView = view.findViewById(R.id.tvtipper)
-        val tvconper: TextView = view.findViewById(R.id.tvconper)
         val btnvolper: Button = view.findViewById(R.id.btnvolper)
 
-        // Ocultar botón innecesario
+        // El botón para volver no es necesario en una navegación con fragmentos
         btnvolper.visibility = View.GONE
 
-        tvusuperfil.text = "Bienvenido Usuario : ${usu?.nombre}"
-        tvnomper.text = usu?.nombre?.lowercase()
-        tvemaper.text = usu?.email?.lowercase()
-        tvtipper.text = usu?.tipo?.lowercase()
-        tvconper.text = usu?.contraseña.toString()
+        // Observar los cambios en el usuario y actualizar la UI
+        userViewModel.usuario.observe(viewLifecycleOwner) { usu ->
+            if (usu != null) {
+                tvusuperfil.text = "Bienvenido Usuario: ${usu.nombre}"
+                tvnomper.text = usu.nombre.lowercase()
+                tvemaper.text = usu.email.lowercase()
+                tvtipper.text = usu.tipo.lowercase()
+            }
+        }
     }
 }
