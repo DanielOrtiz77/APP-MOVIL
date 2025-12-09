@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/fondomenu1"
     android:orientation="vertical"
+    android:padding="16dp"
     tools:context=".ManipularArduino">
 
     <TextView
@@ -14,10 +15,9 @@
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:background="#031381"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
+        android:gravity="center"
+        android:padding="10dp"
         android:text="Bienvenido Usuario:"
-        android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="24sp"
         android:textStyle="bold" />
@@ -27,47 +27,49 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="Manipular LED"
+        android:text="Control de LED"
         android:textAlignment="center"
         android:textColor="@color/black"
         android:textSize="30sp"
         android:textStyle="bold" />
 
-    <Button
-        android:id="@+id/btnon"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"
-        android:backgroundTint="#168519"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        android:text="On"
-        android:textSize="25sp"
-        android:textStyle="bold" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:gravity="center"
+        android:orientation="horizontal">
 
-    <Button
-        android:id="@+id/btnoff"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"
-        android:backgroundTint="#C70505"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        android:text="Off"
-        android:textSize="25sp"
-        android:textStyle="bold" />
+        <Button
+            android:id="@+id/btnon"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_marginEnd="16dp"
+            android:backgroundTint="#168519"
+            android:text="ON"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnoff"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:backgroundTint="#C70505"
+            android:text="OFF"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <Button
         android:id="@+id/btnvolman"
         android:layout_width="match_parent"
         android:layout_height="60dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="20dp"
         android:backgroundTint="#2196F3"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
         android:text="Volver"
         android:textSize="24sp"
         android:textStyle="bold" />

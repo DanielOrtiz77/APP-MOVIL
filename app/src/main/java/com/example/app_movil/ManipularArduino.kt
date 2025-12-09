@@ -10,14 +10,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import java.net.HttpURLConnection
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 class ManipularArduino : AppCompatActivity() {
-
 
     private lateinit var tvusumanipular: TextView
     private lateinit var btnon: Button
@@ -25,8 +21,6 @@ class ManipularArduino : AppCompatActivity() {
     private lateinit var btnvolman: Button
 
     private var usu: Usuario? = null
-
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,162 +32,49 @@ class ManipularArduino : AppCompatActivity() {
             insets
         }
 
-
+        // Inicializar vistas
         tvusumanipular = findViewById(R.id.tvusumanipular)
         btnon = findViewById(R.id.btnon)
         btnoff = findViewById(R.id.btnoff)
         btnvolman = findViewById(R.id.btnvolman)
 
         usu = intent.getParcelableExtra("usu", Usuario::class.java)
+        tvusumanipular.text = "Bienvenido Usuario ${usu?.nombre}"
 
-        tvusumanipular.setText("Bienvenido Usuario " + usu?.nombre)
-
-        encender()
-        apagar()
-        volver()
+        setupListeners()
         desactivarFlecha()
+    }
 
+    private fun setupListeners() {
+        // El script de Python espera 'ABRIR' para encender el LED (comando '1')
+        btnon.setOnClickListener { enviarComandoPorFirebase("ABRIR") }
 
-
-    } // Cierra el onCreate.
-
-
-
-    fun encender(){
-        btnon.setOnClickListener {
-
-            var estado = "Encendido"
-            var fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            var hora  = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-
-
-
-            // variable llamada "json" que contiene los datos formateados en JSON
-            // Debe estar así, sin espacios adicionales, de lo contrario,
-            // firebase no reconocerá el formato cuando ESP32 intente enviarlos.
-            val json = """
-            {
-              "estado" : "$estado",
-              "fecha"  : "$fecha",
-              "hora"   : "$hora",
-              "numero" : 1,
-              "usuario" : "${usu?.nombre?.uppercase()}"
-            }
-            """.trimIndent()
-
-
-
-            // La IP es la que muestra ESP32 a través del monitor serial.
-            val url = "http://10.26.175.103/guardar"
-
-
-
-            //----------------------------------------------------------------------------------------------------------------------
-            //--- "Thread" siempre queda igual, ya que, se le entrega la variable "json"                                         ---
-            //--- y el código se lo entrega al ESP32                                                                             ---
-            //----------------------------------------------------------------------------------------------------------------------
-            Thread {
-                try {
-                    val conn = URL(url).openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.doOutput = true
-                    conn.outputStream.write(json.toByteArray())
-
-                    val response = conn.inputStream.bufferedReader().readText()
-                    runOnUiThread {
-                        Toast.makeText(this, "Enviado correctamente", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }.start()
-            //----------------------------------------------------------------------------------------------------------------------
-
-
-        }
-    } // Cierra la función "encender".
-
-
-
-
-    fun apagar(){
-        btnoff.setOnClickListener {
-
-            var estado = "Apagado"
-            var fecha = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            var hora  = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-
-
-
-            // variable llamada "json" que contiene los datos formateados en JSON
-            // Debe estar así, sin espacios adicionales, de lo contrario,
-            // firebase no reconocerá el formato cuando ESP32 intente enviarlos.
-            val json = """
-                {
-                  "estado" : "$estado",
-                  "fecha"  : "$fecha",
-                  "hora"   : "$hora",
-                  "numero" : 0,
-                  "usuario" : "${usu?.nombre?.uppercase()}"
-                }
-                """.trimIndent()
-
-
-
-            // La IP es la que muestra ESP32 a través del monitor serial.
-            val url = "http://10.26.175.103/guardar"
-
-            //----------------------------------------------------------------------------------------------------------------------
-            //--- "Thread" siempre queda igual, ya que, se le entrega la variable "json"                                         ---
-            //--- y el código se lo entrega al ESP32                                                                             ---
-            //----------------------------------------------------------------------------------------------------------------------
-            Thread {
-                try {
-                    val conn = URL(url).openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.doOutput = true
-                    conn.outputStream.write(json.toByteArray())
-
-                    val response = conn.inputStream.bufferedReader().readText()
-                    runOnUiThread {
-                        Toast.makeText(this, "Enviado correctamente", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    runOnUiThread {
-                        Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }.start()
-            //----------------------------------------------------------------------------------------------------------------------
-
-
-        }
-    } // Cierra la función "apagar".
-
-
-
-    fun volver(){
+        // El script de Python espera 'CERRAR' para apagar el LED (comando '0')
+        btnoff.setOnClickListener { enviarComandoPorFirebase("CERRAR") }
 
         btnvolman.setOnClickListener {
-            var intent = Intent(this@ManipularArduino, Menu::class.java)
+            val intent = Intent(this@ManipularArduino, Menu::class.java)
             intent.putExtra("usu", usu)
             startActivity(intent)
         }
+    }
 
-    } // Cierra la funcion volver().
+    private fun enviarComandoPorFirebase(comando: String) {
+        val db = Firebase.firestore
+        val comandoRef = db.collection("comandos").document("servo_control")
+        val data = hashMapOf("comando" to comando)
 
+        comandoRef.set(data)
+            .addOnSuccessListener {
+                val accion = if (comando == "ABRIR") "encendido" else "apagado"
+                Toast.makeText(this, "Comando de $accion enviado.", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error al enviar comando: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+    }
 
-    fun desactivarFlecha(){
-        onBackPressedDispatcher.addCallback(this){
-
-        }
-
-    } // Cierra la funcion desactivarFlecha.
-
-
-
-} // Cierra la clase Manipular ESP32.
+    private fun desactivarFlecha() {
+        onBackPressedDispatcher.addCallback(this) {}
+    }
+}
