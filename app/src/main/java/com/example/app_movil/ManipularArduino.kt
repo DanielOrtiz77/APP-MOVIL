@@ -19,8 +19,10 @@ class ManipularArduino : AppCompatActivity() {
     private lateinit var btnon: Button
     private lateinit var btnoff: Button
     private lateinit var btnvolman: Button
+    private lateinit var tvEstadoLed: TextView
 
     private var usu: Usuario? = null
+    private val db = Firebase.firestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +39,7 @@ class ManipularArduino : AppCompatActivity() {
         btnon = findViewById(R.id.btnon)
         btnoff = findViewById(R.id.btnoff)
         btnvolman = findViewById(R.id.btnvolman)
+        tvEstadoLed = findViewById(R.id.tvEstadoLed)
 
         usu = intent.getParcelableExtra("usu", Usuario::class.java)
         tvusumanipular.text = "Bienvenido Usuario ${usu?.nombre}"
@@ -46,11 +49,17 @@ class ManipularArduino : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // El script de Python espera 'ABRIR' para encender el LED (comando '1')
-        btnon.setOnClickListener { enviarComandoPorFirebase("ABRIR") }
+        // Botón ON: Envía comando para ABRIR y actualiza estados de LED y Portón
+        btnon.setOnClickListener {
+            tvEstadoLed.text = "Estado del LED: Encendido"
+            enviarComandoYActualizarEstados("ABRIR", "Encendido", "Abierto")
+        }
 
-        // El script de Python espera 'CERRAR' para apagar el LED (comando '0')
-        btnoff.setOnClickListener { enviarComandoPorFirebase("CERRAR") }
+        // Botón OFF: Envía comando para CERRAR y actualiza estados de LED y Portón
+        btnoff.setOnClickListener {
+            tvEstadoLed.text = "Estado del LED: Apagado"
+            enviarComandoYActualizarEstados("CERRAR", "Apagado", "Cerrado")
+        }
 
         btnvolman.setOnClickListener {
             val intent = Intent(this@ManipularArduino, Menu::class.java)
@@ -59,18 +68,26 @@ class ManipularArduino : AppCompatActivity() {
         }
     }
 
-    private fun enviarComandoPorFirebase(comando: String) {
-        val db = Firebase.firestore
+    private fun enviarComandoYActualizarEstados(comando: String, estadoLed: String, estadoPorton: String) {
         val comandoRef = db.collection("comandos").document("servo_control")
         val data = hashMapOf("comando" to comando)
 
         comandoRef.set(data)
             .addOnSuccessListener {
-                val accion = if (comando == "ABRIR") "encendido" else "apagado"
-                Toast.makeText(this, "Comando de $accion enviado.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Comando '$comando' enviado.", Toast.LENGTH_SHORT).show()
+
+                // Actualizar estado del LED
+                val ledEstadoRef = db.collection("estados").document("led_estado")
+                ledEstadoRef.set(hashMapOf("estado" to estadoLed))
+
+                // Actualizar estado del Portón
+                val portonEstadoRef = db.collection("estados").document("porton_estado")
+                portonEstadoRef.set(hashMapOf("estado" to estadoPorton))
+
             }
             .addOnFailureListener { e ->
                 Toast.makeText(this, "Error al enviar comando: ${e.message}", Toast.LENGTH_LONG).show()
+                tvEstadoLed.text = "Estado del LED: Error"
             }
     }
 

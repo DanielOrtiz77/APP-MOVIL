@@ -15,6 +15,8 @@ import com.google.firebase.ktx.Firebase
 class ManipularArduinoFragment : Fragment() {
 
     private val userViewModel: UserViewModel by activityViewModels()
+    private lateinit var tvEstadoLed: TextView
+    private val db = Firebase.firestore
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,6 +32,7 @@ class ManipularArduinoFragment : Fragment() {
         val btnon: Button = view.findViewById(R.id.btnon)
         val btnoff: Button = view.findViewById(R.id.btnoff)
         val btnvolman: Button = view.findViewById(R.id.btnvolman)
+        tvEstadoLed = view.findViewById(R.id.tvEstadoLed)
 
         btnvolman.visibility = View.GONE
 
@@ -37,25 +40,35 @@ class ManipularArduinoFragment : Fragment() {
             tvusumanipular.text = "Bienvenido Usuario: ${usu.nombre}"
         }
 
-        // El script de Python espera 'ABRIR' para encender el LED (comando '1')
-        btnon.setOnClickListener { enviarComandoPorFirebase("ABRIR") }
+        // El script de Python espera 'ABRIR' para encender el LED
+        btnon.setOnClickListener {
+            tvEstadoLed.text = "Estado del LED: Encendido"
+            enviarComandoPorFirebase("ABRIR", "Encendido")
+        }
 
-        // El script de Python espera 'CERRAR' para apagar el LED (comando '0')
-        btnoff.setOnClickListener { enviarComandoPorFirebase("CERRAR") }
+        // El script de Python espera 'CERRAR' para apagar el LED
+        btnoff.setOnClickListener {
+            tvEstadoLed.text = "Estado del LED: Apagado"
+            enviarComandoPorFirebase("CERRAR", "Apagado")
+        }
     }
 
-    private fun enviarComandoPorFirebase(comando: String) {
-        val db = Firebase.firestore
+    private fun enviarComandoPorFirebase(comando: String, estado: String) {
         val comandoRef = db.collection("comandos").document("servo_control")
         val data = hashMapOf("comando" to comando)
 
         comandoRef.set(data)
             .addOnSuccessListener {
-                val accion = if (comando == "ABRIR") "encendido" else "apagado"
-                Toast.makeText(context, "Comando de $accion enviado.", Toast.LENGTH_SHORT).show()
+                val accion = if (estado == "Encendido") "encender" else "apagar"
+                Toast.makeText(context, "Comando para $accion el LED enviado.", Toast.LENGTH_SHORT).show()
+
+                val estadoRef = db.collection("estados").document("led_estado")
+                val estadoData = hashMapOf("estado" to estado)
+                estadoRef.set(estadoData)
             }
             .addOnFailureListener { e ->
                 Toast.makeText(context, "Error al enviar comando: ${e.message}", Toast.LENGTH_LONG).show()
+                tvEstadoLed.text = "Estado del LED: Error"
             }
     }
 }
